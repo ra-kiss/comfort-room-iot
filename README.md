@@ -37,23 +37,23 @@
 
 **4. Build Simple Database** (Requirement #2)
 
-- [ ] Create `database/schema.sql`:
+- [x] Create `database/schema.sql`:
   ```sql
   CREATE TABLE rooms (id, name, capacity, has_projector, has_whiteboard);
   CREATE TABLE sensor_data (timestamp, room_id, temperature, co2, humidity, sound);
   CREATE TABLE calendar_events (room_id, start_time, end_time, title);
   ```
-- [ ] Run schema, create 5-10 sample rooms
-- [ ] Write why you chose PostgreSQL in `docs/database.md` (e.g., "widely used, handles time-series data well")
+- [x] Run schema, create 5-10 sample rooms
+- [x] Write why you chose PostgreSQL in `docs/database.md` (e.g., "widely used, handles time-series data well")
 
 **5. Build Data Simulator** (No hardware yet)
 
-- [ ] Create `backend/simulator.py`:
+- [x] Create `backend/simulator.py`:
   - Generates random sensor data every minute
   - Temperature: 19-25°C, CO2: 400-1200ppm, Humidity: 35-65%, Sound: 30-70dB
   - Inserts into database
-- [ ] Run it, verify data appears in database
-- [ ] Create fake calendar events (8am-5pm classes)
+- [x] Run it, verify data appears in database
+- [x] Create fake calendar events (8am-5pm classes)
 
 ---
 
@@ -61,22 +61,22 @@
 
 **6. Build REST API1** (Requirement #5 - Part 1)
 
-- [ ] Install FastAPI: `pip install fastapi uvicorn sqlalchemy`
-- [ ] Create `backend/main.py`
-- [ ] Add these endpoints:
+- [x] Install FastAPI: `pip install fastapi uvicorn sqlalchemy`
+- [x] Create `backend/main.py`
+- [x] Add these endpoints:
   ```python
   GET /api/rooms - list all rooms
   GET /api/rooms/{id} - room details + facilities
   GET /api/sensors/{room_id} - sensor data (add ?start= and ?end= params)
   GET /api/calendar/{room_id} - events for room
   ```
-- [ ] Test each with browser or Postman
-- [ ] Swagger docs auto-generated at `/docs`
+- [x] Test each with browser or Postman
+- [x] Swagger docs auto-generated at `/docs`
 
 **7. Build Decision Algorithm** (Requirement #4)
 
-- [ ] Create `backend/decision.py`
-- [ ] Write simple weighted sum (skip complex AHP for now):
+- [x] Create `backend/decision.py`
+- [x] Write simple weighted sum (skip complex AHP for now):
   ```python
   def calculate_score(room_data, weights):
       temp_score = map_to_score(room_data['temperature'], ideal=22)
@@ -86,20 +86,20 @@
                co2_score * weights['co2'] + ...)
       return final
   ```
-- [ ] Mapping function: if value = ideal → score 100, further away → lower score
-- [ ] Test with sample data
+- [x] Mapping function: if value = ideal → score 100, further away → lower score
+- [x] Test with sample data
 
 **8. Build REST API2** (Requirement #5 - Part 2)
 
-- [ ] Add to `backend/main.py`:
+- [x] Add to `backend/main.py`:
   ```python
   POST /api/recommend
   Body: {"weights": {"temp": 0.3, "co2": 0.4, ...}, 
          "requirements": {"min_capacity": 20, "needs_projector": true}}
   Returns: [{"room_id": 1, "score": 85}, {"room_id": 3, "score": 72}, ...]
   ```
-- [ ] Connect to your decision algorithm
-- [ ] Test: does it return ranked rooms?
+- [x] Connect to your decision algorithm
+- [x] Test: does it return ranked rooms?
 
 ---
 
@@ -115,7 +115,6 @@
   - **Button:** "Find Rooms"
   - **Results:** Show ranked list of rooms with scores
 - [ ] Add second tab with embedded Swagger (`<iframe src="http://localhost:8000/docs">`)
-- [ ] Make it look decent, not beautiful
 
 ---
 
@@ -132,7 +131,6 @@
   - **Table:** Room facilities list
   - **Calendar view:** Show upcoming events (can be simple list)
 - [ ] Fetch data from API1
-- [ ] Basic styling, focus on functionality
 
 ---
 
