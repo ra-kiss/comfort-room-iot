@@ -107,14 +107,15 @@
 
 **9. Build UI1 - Room Selection** (Requirement #6 - UI1)
 
-- [ ] `npx create-react-app frontend-user`
-- [ ] Install Material-UI: `npm install @mui/material`
-- [ ] Create one page with:
+- [x] `npx create-react-app frontend-user`
+- [x] Install Material-UI: `npm install @mui/material`
+- [x] Create one page with:
   - **Sliders for weights:** "Temperature importance: 1-10" (convert to 0-1)
   - **Inputs:** "Min capacity", "Need projector?" checkbox
   - **Button:** "Find Rooms"
   - **Results:** Show ranked list of rooms with scores
-- [ ] Add second tab with embedded Swagger (`<iframe src="http://localhost:8000/docs">`)
+- [x] Add second tab with embedded Swagger (`<iframe src="http://localhost:8000/docs">`)
+- [ ] Fetch data from API2
 
 ---
 
@@ -122,9 +123,9 @@
 
 **10. Build UI2 - Admin Dashboard** (Requirement #6 - UI2)
 
-- [ ] `npx create-react-app frontend-admin`
-- [ ] Install Recharts: `npm install recharts`
-- [ ] Create dashboard with:
+- [x] `npx create-react-app frontend-admin`
+- [x] Install Recharts: `npm install recharts`
+- [x] Create dashboard with:
   - **Room selector dropdown**
   - **Date range picker**
   - **4 charts:** Temperature over time, CO2 over time, Humidity, Sound
@@ -180,7 +181,7 @@
 
 ---
 
-## 📁 Your Project Structure
+## 📁 Project Structure Plan
 
 ```
 comfort-room/
