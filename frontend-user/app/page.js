@@ -152,36 +152,50 @@ export default function Home() {
   const handleFindRooms = async () => {
     setLoading(true);
 
-    // TODO: Replace with actual API call when backend is ready
-    // For now, simulate a response
-    setTimeout(() => {
+    try {
+      const response = await fetch('http://localhost:8000/api/recommend', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          weights: ahpResult.weights,
+          desired_profile: desiredProfile,
+          requirements: {
+            min_capacity: requirements.minCapacity,
+            needs_projector: requirements.needsProjector,
+            needs_whiteboard: requirements.needsWhiteboard,
+          },
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+
+      // Map backend response to frontend format
+      const mappedRooms = data.map((room) => ({
+        id: room.room_id,
+        name: room.room_name,
+        score: room.score,
+        capacity: room.facilities.capacity,
+        hasProjector: room.facilities.has_projector,
+        hasWhiteboard: room.facilities.has_whiteboard,
+      }));
+
       setResults({
-        rooms: [
-          { id: 1, name: 'Room A101', score: 92, capacity: 30, hasProjector: true, hasWhiteboard: true },
-          { id: 2, name: 'Room B205', score: 85, capacity: 25, hasProjector: true, hasWhiteboard: false },
-          { id: 3, name: 'Room C102', score: 78, capacity: 40, hasProjector: false, hasWhiteboard: true },
-          { id: 4, name: 'Room D301', score: 65, capacity: 20, hasProjector: true, hasWhiteboard: true },
-        ],
+        rooms: mappedRooms,
         weights: ahpResult.weights,
         desiredProfile,
         requirements,
       });
+    } catch (error) {
+      console.error('Failed to fetch room recommendations:', error);
+      alert('Failed to fetch recommendations. Make sure the backend is running on http://localhost:8000');
+      setResults(null);
+    } finally {
       setLoading(false);
-    }, 500);
-
-    // Actual API call would look like:
-    // const response = await fetch('/api/recommend', {
-    //   method: 'POST',
-    //   headers: { 'Content-Type': 'application/json' },
-    //   body: JSON.stringify({
-    //     weights: ahpResult.weights,
-    //     desiredProfile,
-    //     requirements,
-    //   }),
-    // });
-    // const data = await response.json();
-    // setResults(data);
-    // setLoading(false);
+    }
   };
 
   return (

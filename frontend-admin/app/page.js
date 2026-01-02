@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import {
   Container,
   Typography,
@@ -35,72 +35,7 @@ import {
   ReferenceLine,
   ReferenceArea,
 } from 'recharts';
-import { format, subDays, addHours, isWithinInterval } from 'date-fns';
-
-// Mock rooms data
-const ROOMS = [
-  { id: 1, name: 'Room A101', capacity: 30, hasProjector: true, hasWhiteboard: true, hasAC: true },
-  { id: 2, name: 'Room B205', capacity: 25, hasProjector: true, hasWhiteboard: false, hasAC: true },
-  { id: 3, name: 'Room C102', capacity: 40, hasProjector: false, hasWhiteboard: true, hasAC: false },
-  { id: 4, name: 'Room D301', capacity: 20, hasProjector: true, hasWhiteboard: true, hasAC: true },
-];
-
-// Mock calendar events
-const generateMockEvents = (roomId) => {
-  const events = [
-    { id: 1, title: 'Morning Lecture', start: '08:00', end: '10:00', date: format(new Date(), 'yyyy-MM-dd') },
-    { id: 2, title: 'Team Meeting', start: '11:00', end: '12:00', date: format(new Date(), 'yyyy-MM-dd') },
-    { id: 3, title: 'Afternoon Workshop', start: '14:00', end: '16:00', date: format(new Date(), 'yyyy-MM-dd') },
-    { id: 4, title: 'Evening Class', start: '17:00', end: '19:00', date: format(addHours(new Date(), 24), 'yyyy-MM-dd') },
-  ];
-  return events;
-};
-
-// Generate mock sensor data with some disconnection periods
-const generateMockSensorData = (startDate, endDate, roomId) => {
-  const data = [];
-  let current = new Date(startDate);
-  const end = new Date(endDate);
-
-  let hourIndex = 0;
-
-  while (current <= end) {
-    // Create disconnection gaps at specific intervals (every ~40 hours for 5 hours)
-    const isDisconnected = (hourIndex % 40 >= 35);
-
-    if (!isDisconnected) {
-      // Add some variation based on time of day
-      const hour = current.getHours();
-      const isWorkingHours = hour >= 8 && hour <= 18;
-
-      data.push({
-        timestamp: current.toISOString(),
-        time: format(current, 'MM/dd HH:mm'),
-        temperature: 20 + Math.random() * 5 + (isWorkingHours ? 2 : 0) + (roomId * 0.5),
-        co2: 400 + Math.random() * 400 + (isWorkingHours ? 300 : 0),
-        humidity: 40 + Math.random() * 20,
-        sound: 25 + Math.random() * 20 + (isWorkingHours ? 15 : 0),
-        disconnected: false,
-      });
-    } else {
-      // Skip this data point entirely to create a gap
-      data.push({
-        timestamp: current.toISOString(),
-        time: format(current, 'MM/dd HH:mm'),
-        temperature: undefined,
-        co2: undefined,
-        humidity: undefined,
-        sound: undefined,
-        disconnected: true,
-      });
-    }
-
-    current = addHours(current, 1);
-    hourIndex++;
-  }
-
-  return data;
-};
+import { format, subDays, addHours, parseISO } from 'date-fns';
 
 // Chart component with disconnection highlighting
 function SensorChart({ data, dataKey, label, unit, color, optimalRange }) {
@@ -152,21 +87,123 @@ function SensorChart({ data, dataKey, label, unit, color, optimalRange }) {
 }
 
 export default function AdminDashboard() {
-  const [selectedRoom, setSelectedRoom] = useState(1);
+  const [rooms, setRooms] = useState([]);
+  const [selectedRoom, setSelectedRoom] = useState(null);
   const [startDate, setStartDate] = useState(format(subDays(new Date(), 7), 'yyyy-MM-dd'));
   const [endDate, setEndDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [sensorData, setSensorData] = useState([]);
+  const [calendarEvents, setCalendarEvents] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Fetch rooms on mount
+  useEffect(() => {
+    const fetchRooms = async () => {
+      try {
+        const response = await fetch('http://localhost:8000/api/rooms');
+        if (!response.ok) throw new Error('Failed to fetch rooms');
+        const data = await response.json();
+        setRooms(data);
+        if (data.length > 0) {
+          setSelectedRoom(data[0].id);
+        }
+      } catch (err) {
+        setError('Failed to load rooms. Make sure the backend is running on http://localhost:8000');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchRooms();
+  }, []);
+
+  // Fetch sensor data when room or date range changes
+  useEffect(() => {
+    if (!selectedRoom) return;
+
+    const fetchSensorData = async () => {
+      try {
+        const startISO = new Date(startDate).toISOString();
+        const endISO = new Date(endDate + 'T23:59:59').toISOString();
+        const url = `http://localhost:8000/api/sensors/${selectedRoom}?start=${startISO}&end=${endISO}&limit=1000`;
+
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Failed to fetch sensor data');
+        const data = await response.json();
+
+        // Map to chart format
+        const mappedData = data.reverse().map((d) => ({
+          timestamp: d.timestamp,
+          time: format(parseISO(d.timestamp), 'MM/dd HH:mm'),
+          temperature: d.temperature,
+          co2: d.co2,
+          humidity: d.humidity,
+          sound: d.sound,
+          disconnected: false,
+        }));
+
+        setSensorData(mappedData);
+      } catch (err) {
+        console.error('Failed to fetch sensor data:', err);
+        setSensorData([]);
+      }
+    };
+
+    fetchSensorData();
+  }, [selectedRoom, startDate, endDate]);
+
+  // Fetch calendar events when room changes
+  useEffect(() => {
+    if (!selectedRoom) return;
+
+    const fetchCalendarEvents = async () => {
+      try {
+        const response = await fetch(`http://localhost:8000/api/calendar/${selectedRoom}`);
+        if (!response.ok) throw new Error('Failed to fetch calendar events');
+        const data = await response.json();
+
+        // Map to display format
+        const mappedEvents = data.map((e) => ({
+          id: e.id,
+          title: e.title,
+          start: format(parseISO(e.start_time), 'HH:mm'),
+          end: format(parseISO(e.end_time), 'HH:mm'),
+          date: format(parseISO(e.start_time), 'yyyy-MM-dd'),
+        }));
+
+        setCalendarEvents(mappedEvents);
+      } catch (err) {
+        console.error('Failed to fetch calendar events:', err);
+        setCalendarEvents([]);
+      }
+    };
+
+    fetchCalendarEvents();
+  }, [selectedRoom]);
 
   // Get current room data
-  const currentRoom = ROOMS.find(r => r.id === selectedRoom);
-  const calendarEvents = useMemo(() => generateMockEvents(selectedRoom), [selectedRoom]);
-  const sensorData = useMemo(
-    () => generateMockSensorData(startDate, endDate, selectedRoom),
-    [startDate, endDate, selectedRoom]
-  );
+  const currentRoom = rooms.find(r => r.id === selectedRoom);
 
   // Check for disconnection periods
   const disconnectionCount = sensorData.filter(d => d.disconnected).length;
   const hasDisconnections = disconnectionCount > 0;
+
+  if (loading) {
+    return (
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Typography>Loading...</Typography>
+      </Container>
+    );
+  }
+
+  if (error) {
+    return (
+      <Container maxWidth="xl" sx={{ py: 4 }}>
+        <Alert severity="error">{error}</Alert>
+      </Container>
+    );
+  }
 
   return (
     <Container maxWidth="xl" sx={{ py: 4 }}>
@@ -184,11 +221,11 @@ export default function AdminDashboard() {
             <FormControl fullWidth size="small">
               <InputLabel>Select Room</InputLabel>
               <Select
-                value={selectedRoom}
+                value={selectedRoom || ''}
                 label="Select Room"
                 onChange={(e) => setSelectedRoom(e.target.value)}
               >
-                {ROOMS.map((room) => (
+                {rooms.map((room) => (
                   <MenuItem key={room.id} value={room.id}>
                     {room.name}
                   </MenuItem>
@@ -306,8 +343,8 @@ export default function AdminDashboard() {
                     <TableCell>Projector</TableCell>
                     <TableCell align="center">
                       <Chip
-                        label={currentRoom?.hasProjector ? 'Available' : 'Not Available'}
-                        color={currentRoom?.hasProjector ? 'success' : 'default'}
+                        label={currentRoom?.has_projector ? 'Available' : 'Not Available'}
+                        color={currentRoom?.has_projector ? 'success' : 'default'}
                         size="small"
                       />
                     </TableCell>
@@ -316,21 +353,25 @@ export default function AdminDashboard() {
                     <TableCell>Whiteboard</TableCell>
                     <TableCell align="center">
                       <Chip
-                        label={currentRoom?.hasWhiteboard ? 'Available' : 'Not Available'}
-                        color={currentRoom?.hasWhiteboard ? 'success' : 'default'}
+                        label={currentRoom?.has_whiteboard ? 'Available' : 'Not Available'}
+                        color={currentRoom?.has_whiteboard ? 'success' : 'default'}
                         size="small"
                       />
                     </TableCell>
                   </TableRow>
                   <TableRow>
-                    <TableCell>Air Conditioning</TableCell>
+                    <TableCell>Accessible</TableCell>
                     <TableCell align="center">
                       <Chip
-                        label={currentRoom?.hasAC ? 'Available' : 'Not Available'}
-                        color={currentRoom?.hasAC ? 'success' : 'default'}
+                        label={currentRoom?.is_accessible ? 'Yes' : 'No'}
+                        color={currentRoom?.is_accessible ? 'success' : 'default'}
                         size="small"
                       />
                     </TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell>Power Outlets</TableCell>
+                    <TableCell align="center">{currentRoom?.has_power_outlets || 0}</TableCell>
                   </TableRow>
                 </TableBody>
               </Table>

@@ -13,7 +13,7 @@ from pydantic import BaseModel, Field
 import psycopg2
 from psycopg2.extras import RealDictCursor
 
-from decision import Weights, rank_rooms
+from decision import Weights, DesiredProfile, rank_rooms
 
 # Database configuration (same as simulator.py)
 DB_CONFIG = {
@@ -89,10 +89,19 @@ class RoomRequirements(BaseModel):
     min_power_outlets: Optional[int] = Field(default=None, ge=0, description="Minimum power outlets")
 
 
+class DesiredProfileRequest(BaseModel):
+    """User's desired ideal values for each criterion."""
+    temperature: Optional[float] = Field(default=None, description="Desired temperature in Celsius")
+    co2: Optional[int] = Field(default=None, description="Desired CO2 level in ppm")
+    humidity: Optional[float] = Field(default=None, description="Desired humidity percentage")
+    sound: Optional[float] = Field(default=None, description="Desired sound level in dB")
+
+
 class RecommendationRequest(BaseModel):
     """Request body for room recommendation."""
     weights: RecommendationWeights = Field(default_factory=RecommendationWeights)
     requirements: RoomRequirements = Field(default_factory=RoomRequirements)
+    desired_profile: Optional[DesiredProfileRequest] = Field(default=None, description="User's desired ideal values")
 
 
 class RoomScore(BaseModel):
@@ -424,8 +433,18 @@ def recommend_rooms(request: RecommendationRequest):
             sound=request.weights.sound,
         )
 
+        # Convert desired_profile if provided
+        desired_profile = None
+        if request.desired_profile:
+            desired_profile = DesiredProfile(
+                temperature=request.desired_profile.temperature,
+                co2=request.desired_profile.co2,
+                humidity=request.desired_profile.humidity,
+                sound=request.desired_profile.sound,
+            )
+
         # Rank rooms using decision algorithm
-        ranked = rank_rooms(rooms_with_sensors, weights)
+        ranked = rank_rooms(rooms_with_sensors, weights, desired_profile)
 
         # Add facilities to results
         facilities_map = {r["room_id"]: r["facilities"] for r in rooms_with_sensors}

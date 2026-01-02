@@ -32,6 +32,15 @@ class Weights:
     sound: float = 0.25
 
 
+@dataclass
+class DesiredProfile:
+    """User's desired ideal values for each criterion."""
+    temperature: Optional[float] = None  # Celsius
+    co2: Optional[int] = None            # ppm
+    humidity: Optional[float] = None     # %
+    sound: Optional[float] = None        # dB
+
+
 # Criteria thresholds based on docs/criteria.md
 CRITERIA = {
     "temperature": {
@@ -64,13 +73,14 @@ CRITERIA = {
 }
 
 
-def score_temperature(value: float) -> float:
+def score_temperature(value: float, ideal: Optional[float] = None) -> float:
     """
     Score temperature on 0-100 scale.
     Ideal: 22°C (100), Good: 20-24°C (80-99), Acceptable: 18-26°C (50-79), Poor: outside (0-49)
     """
     c = CRITERIA["temperature"]
-    ideal = c["ideal"]
+    if ideal is None:
+        ideal = c["ideal"]
 
     if value == ideal:
         return 100.0
@@ -102,20 +112,22 @@ def score_temperature(value: float) -> float:
     return max(0.0, 50.0 - distance * 10.0)
 
 
-def score_co2(value: int) -> float:
+def score_co2(value: int, ideal: Optional[int] = None) -> float:
     """
     Score CO2 on 0-100 scale (lower is better).
     Ideal: <600 (100), Good: 600-800 (90-99), Acceptable: 800-1000 (70-89),
     Medium: 1000-1400 (50-69), Poor: >1400 (0-49)
     """
     c = CRITERIA["co2"]
+    if ideal is None:
+        ideal = c["ideal"]
 
-    if value <= c["ideal"]:
+    if value <= ideal:
         return 100.0
 
     if value <= c["good_max"]:
         # 600-800 → 90-100
-        ratio = (value - c["ideal"]) / (c["good_max"] - c["ideal"])
+        ratio = (value - ideal) / (c["good_max"] - ideal)
         return 100.0 - ratio * 10.0
 
     if value <= c["acceptable_max"]:
@@ -133,26 +145,34 @@ def score_co2(value: int) -> float:
     return max(0.0, 50.0 - excess * 0.1)
 
 
-def score_humidity(value: float) -> float:
+def score_humidity(value: float, ideal: Optional[float] = None) -> float:
     """
     Score humidity on 0-100 scale.
     Ideal: 45-55% (100), Good: 40-60% (80-99), Acceptable: 30-70% (50-79), Poor: outside (0-49)
     """
     c = CRITERIA["humidity"]
 
-    # Ideal range: 45-55%
-    if c["ideal_min"] <= value <= c["ideal_max"]:
+    # Use custom ideal or default range
+    if ideal is not None:
+        ideal_min = ideal - 5.0
+        ideal_max = ideal + 5.0
+    else:
+        ideal_min = c["ideal_min"]
+        ideal_max = c["ideal_max"]
+
+    # Ideal range: custom or 45-55%
+    if ideal_min <= value <= ideal_max:
         return 100.0
 
     # Good range: 40-45 or 55-60 → 80-100
-    if c["good_min"] <= value < c["ideal_min"]:
-        distance = c["ideal_min"] - value
-        max_distance = c["ideal_min"] - c["good_min"]
+    if c["good_min"] <= value < ideal_min:
+        distance = ideal_min - value
+        max_distance = ideal_min - c["good_min"]
         return 100.0 - (distance / max_distance) * 20.0
 
-    if c["ideal_max"] < value <= c["good_max"]:
-        distance = value - c["ideal_max"]
-        max_distance = c["good_max"] - c["ideal_max"]
+    if ideal_max < value <= c["good_max"]:
+        distance = value - ideal_max
+        max_distance = c["good_max"] - ideal_max
         return 100.0 - (distance / max_distance) * 20.0
 
     # Acceptable range: 30-40 or 60-70 → 50-80
@@ -175,19 +195,21 @@ def score_humidity(value: float) -> float:
     return max(0.0, 50.0 - distance * 2.5)
 
 
-def score_sound(value: float) -> float:
+def score_sound(value: float, ideal: Optional[float] = None) -> float:
     """
     Score sound level on 0-100 scale (lower is better).
     Ideal: <30 dB (100), Good: 30-35 dB (80-99), Acceptable: 35-45 dB (50-79), Poor: >45 dB (0-49)
     """
     c = CRITERIA["sound"]
+    if ideal is None:
+        ideal = c["ideal"]
 
-    if value <= c["ideal"]:
+    if value <= ideal:
         return 100.0
 
     if value <= c["good_max"]:
         # 30-35 → 80-100
-        ratio = (value - c["ideal"]) / (c["good_max"] - c["ideal"])
+        ratio = (value - ideal) / (c["good_max"] - ideal)
         return 100.0 - ratio * 20.0
 
     if value <= c["acceptable_max"]:
@@ -201,7 +223,7 @@ def score_sound(value: float) -> float:
     return max(0.0, 50.0 - (excess / max_excess) * 50.0)
 
 
-def calculate_room_score(reading: SensorReading, weights: Weights) -> dict:
+def calculate_room_score(reading: SensorReading, weights: Weights, desired_profile: Optional[DesiredProfile] = None) -> dict:
     """
     Calculate weighted comfort score for a room.
 
@@ -213,25 +235,29 @@ def calculate_room_score(reading: SensorReading, weights: Weights) -> dict:
 
     # Temperature
     if reading.temperature is not None:
-        scores["temperature"] = round(score_temperature(reading.temperature), 1)
+        ideal_temp = desired_profile.temperature if desired_profile and desired_profile.temperature is not None else None
+        scores["temperature"] = round(score_temperature(reading.temperature, ideal_temp), 1)
         weighted_sum += scores["temperature"] * weights.temperature
         total_weight += weights.temperature
 
     # CO2
     if reading.co2 is not None:
-        scores["co2"] = round(score_co2(reading.co2), 1)
+        ideal_co2 = desired_profile.co2 if desired_profile and desired_profile.co2 is not None else None
+        scores["co2"] = round(score_co2(reading.co2, ideal_co2), 1)
         weighted_sum += scores["co2"] * weights.co2
         total_weight += weights.co2
 
     # Humidity
     if reading.humidity is not None:
-        scores["humidity"] = round(score_humidity(reading.humidity), 1)
+        ideal_humidity = desired_profile.humidity if desired_profile and desired_profile.humidity is not None else None
+        scores["humidity"] = round(score_humidity(reading.humidity, ideal_humidity), 1)
         weighted_sum += scores["humidity"] * weights.humidity
         total_weight += weights.humidity
 
     # Sound
     if reading.sound is not None:
-        scores["sound"] = round(score_sound(reading.sound), 1)
+        ideal_sound = desired_profile.sound if desired_profile and desired_profile.sound is not None else None
+        scores["sound"] = round(score_sound(reading.sound, ideal_sound), 1)
         weighted_sum += scores["sound"] * weights.sound
         total_weight += weights.sound
 
@@ -250,13 +276,14 @@ def calculate_room_score(reading: SensorReading, weights: Weights) -> dict:
     }
 
 
-def rank_rooms(rooms_data: list[dict], weights: Weights) -> list[dict]:
+def rank_rooms(rooms_data: list[dict], weights: Weights, desired_profile: Optional[DesiredProfile] = None) -> list[dict]:
     """
     Rank multiple rooms by comfort score.
 
     Args:
         rooms_data: List of dicts with room_id and sensor data
         weights: User preference weights
+        desired_profile: User's desired ideal values (optional)
 
     Returns:
         List of rooms sorted by score (highest first)
@@ -271,7 +298,7 @@ def rank_rooms(rooms_data: list[dict], weights: Weights) -> list[dict]:
             sound=room.get("sound"),
         )
 
-        score_result = calculate_room_score(reading, weights)
+        score_result = calculate_room_score(reading, weights, desired_profile)
 
         results.append({
             "room_id": room["room_id"],
