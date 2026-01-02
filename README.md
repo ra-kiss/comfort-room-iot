@@ -115,7 +115,7 @@
   - **Button:** "Find Rooms"
   - **Results:** Show ranked list of rooms with scores
 - [x] Add second tab with embedded Swagger (`<iframe src="http://localhost:8000/docs">`)
-- [ ] Fetch data from API2
+- [x] Fetch data from API2
 
 ---
 
@@ -131,7 +131,7 @@
   - **4 charts:** Temperature over time, CO2 over time, Humidity, Sound
   - **Table:** Room facilities list
   - **Calendar view:** Show upcoming events (can be simple list)
-- [ ] Fetch data from API1
+- [x] Fetch data from API1
 
 ---
 
@@ -169,13 +169,13 @@
 - [ ] Test all API endpoints
 - [ ] Test UI1 can get room recommendations
 - [ ] Test UI2 shows charts
-- [ ] Fix any obvious bugs
-- [ ] Add brief comments to code
+- [ ] Fix any obvious bugs (optional)
+- [ ] Add brief comments to code (optional)
 
 **14. Package & Submit**
 
-- [ ] Create GitHub repo or zip file
-- [ ] Include: backend/, frontend-user/, frontend-admin/, database/, docs/, README
+- [x] Create GitHub repo or zip file
+- [x] Include: backend/, frontend-user/, frontend-admin/, database/, docs/, README
 - [ ] Include: Final report PDF with screenshots
 - [ ] Submit
 
