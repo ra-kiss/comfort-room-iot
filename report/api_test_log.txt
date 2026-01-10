@@ -1,0 +1,748 @@
+==================================================================
+COMFORTROOM API - TESTING REPORT
+==================================================================
+Test Date: January 10, 2026
+API Base URL: http://localhost:8000
+API Version: 1.0.0
+Swagger Docs: http://localhost:8000/docs
+
+==================================================================
+SECTION 1: BASIC ENDPOINTS
+==================================================================
+
+------------------------------------------------------------------
+TEST 1: Root Endpoint
+------------------------------------------------------------------
+Command: curl -X GET http://localhost:8000/
+
+Response:
+{
+  "message": "ComfortRoom API",
+  "version": "1.0.0",
+  "docs": "/docs"
+}
+
+
+------------------------------------------------------------------
+TEST 2: List All Rooms
+------------------------------------------------------------------
+Command: curl -X GET http://localhost:8000/api/rooms
+
+Response: (10 rooms total, showing first 3)
+[
+  {
+    "id": 7,
+    "name": "Lab C101",
+    "building": "Building C",
+    "floor": 1,
+    "capacity": 25,
+    "has_projector": true,
+    "has_whiteboard": true,
+    "has_power_outlets": 25,
+    "is_accessible": true
+  },
+  {
+    "id": 9,
+    "name": "Lecture Hall E",
+    "building": "Building E",
+    "floor": 0,
+    "capacity": 100,
+    "has_projector": true,
+    "has_whiteboard": true,
+    "has_power_outlets": 30,
+    "is_accessible": true
+  },
+  {
+    "id": 1,
+    "name": "Room A101",
+    "building": "Building A",
+    "floor": 1,
+    "capacity": 30,
+    "has_projector": true,
+    "has_whiteboard": true,
+    "has_power_outlets": 10,
+    "is_accessible": true
+  }
+]
+
+... (7 more rooms)
+
+
+------------------------------------------------------------------
+TEST 3: Get Specific Room
+------------------------------------------------------------------
+Command: curl -X GET http://localhost:8000/api/rooms/1
+
+Response:
+{
+  "id": 1,
+  "name": "Room A101",
+  "building": "Building A",
+  "floor": 1,
+  "capacity": 30,
+  "has_projector": true,
+  "has_whiteboard": true,
+  "has_power_outlets": 10,
+  "is_accessible": true
+}
+
+
+==================================================================
+SECTION 2: SENSOR DATA
+==================================================================
+
+------------------------------------------------------------------
+TEST 4: Get Sensor Data (with limit)
+------------------------------------------------------------------
+Command: curl -X GET 'http://localhost:8000/api/sensors/1?limit=5'
+
+Response: (Most recent 5 readings)
+[
+  {
+    "id": 291,
+    "room_id": 1,
+    "timestamp": "2026-01-10T20:31:39.436219",
+    "temperature": 21.4,
+    "co2": 1047,
+    "humidity": 55.4,
+    "sound": 32.3
+  },
+  {
+    "id": 281,
+    "room_id": 1,
+    "timestamp": "2026-01-10T20:31:36.428295",
+    "temperature": 21.1,
+    "co2": 1086,
+    "humidity": 54.4,
+    "sound": 31.4
+  },
+  {
+    "id": 271,
+    "room_id": 1,
+    "timestamp": "2026-01-10T20:31:33.410685",
+    "temperature": 21.2,
+    "co2": 1057,
+    "humidity": 53.9,
+    "sound": 30.7
+  },
+  {
+    "id": 261,
+    "room_id": 1,
+    "timestamp": "2026-01-10T20:31:30.395461",
+    "temperature": 21.3,
+    "co2": 1033,
+    "humidity": 53.6,
+    "sound": 30.7
+  },
+  {
+    "id": 251,
+    "room_id": 1,
+    "timestamp": "2026-01-10T20:31:27.388439",
+    "temperature": 21.2,
+    "co2": 1082,
+    "humidity": 52.7,
+    "sound": 30.5
+  }
+]
+
+
+------------------------------------------------------------------
+TEST 5: Get Latest Sensor Reading
+------------------------------------------------------------------
+Command: curl -X GET http://localhost:8000/api/sensors/1/latest
+
+Response:
+{
+  "room_id": 1,
+  "room_name": "Room A101",
+  "data": {
+    "id": 291,
+    "room_id": 1,
+    "timestamp": "2026-01-10T20:31:39.436219",
+    "temperature": 21.4,
+    "co2": 1047,
+    "humidity": 55.4,
+    "sound": 32.3
+  }
+}
+
+
+==================================================================
+SECTION 3: CALENDAR EVENTS
+==================================================================
+
+------------------------------------------------------------------
+TEST 6: Get Calendar Events
+------------------------------------------------------------------
+Command: curl -X GET http://localhost:8000/api/calendar/1
+
+Response:
+[
+  {
+    "id": 17,
+    "room_id": 1,
+    "title": "Database Systems Lecture",
+    "start_time": "2026-01-11T09:00:00",
+    "end_time": "2026-01-11T10:30:00",
+    "organizer": "Prof. Anderson"
+  },
+  {
+    "id": 18,
+    "room_id": 1,
+    "title": "Software Engineering Lab",
+    "start_time": "2026-01-11T14:00:00",
+    "end_time": "2026-01-11T16:00:00",
+    "organizer": "Dr. Martinez"
+  },
+  {
+    "id": 19,
+    "room_id": 1,
+    "title": "Team Meeting - Project Alpha",
+    "start_time": "2026-01-12T10:00:00",
+    "end_time": "2026-01-12T11:00:00",
+    "organizer": "Sarah Johnson"
+  }
+]
+
+
+------------------------------------------------------------------
+TEST 7: Calendar with Date Range Filter
+------------------------------------------------------------------
+Command: curl -X GET "http://localhost:8000/api/calendar/1?start=2026-01-11T00:00:00&end=2026-01-12T23:59:59"
+
+Response:
+[
+  {
+    "id": 17,
+    "room_id": 1,
+    "title": "Database Systems Lecture",
+    "start_time": "2026-01-11T09:00:00",
+    "end_time": "2026-01-11T10:30:00",
+    "organizer": "Prof. Anderson"
+  },
+  {
+    "id": 18,
+    "room_id": 1,
+    "title": "Software Engineering Lab",
+    "start_time": "2026-01-11T14:00:00",
+    "end_time": "2026-01-11T16:00:00",
+    "organizer": "Dr. Martinez"
+  },
+  {
+    "id": 19,
+    "room_id": 1,
+    "title": "Team Meeting - Project Alpha",
+    "start_time": "2026-01-12T10:00:00",
+    "end_time": "2026-01-12T11:00:00",
+    "organizer": "Sarah Johnson"
+  }
+]
+
+
+------------------------------------------------------------------
+TEST 8: Calendar Events - Multiple Rooms
+------------------------------------------------------------------
+
+Room 2 (Room A102):
+Command: curl -X GET http://localhost:8000/api/calendar/2
+
+Response:
+[
+  {
+    "id": 20,
+    "room_id": 2,
+    "title": "Web Development Class",
+    "start_time": "2026-01-11T10:00:00",
+    "end_time": "2026-01-11T12:00:00",
+    "organizer": "Dr. Thompson"
+  },
+  {
+    "id": 21,
+    "room_id": 2,
+    "title": "UX Design Workshop",
+    "start_time": "2026-01-11T15:00:00",
+    "end_time": "2026-01-11T17:00:00",
+    "organizer": "Emily White"
+  }
+]
+
+
+Room 3 (Room A201):
+Command: curl -X GET http://localhost:8000/api/calendar/3
+
+Response:
+[
+  {
+    "id": 22,
+    "room_id": 3,
+    "title": "Machine Learning Seminar",
+    "start_time": "2026-01-11T11:00:00",
+    "end_time": "2026-01-11T13:00:00",
+    "organizer": "Prof. Kumar"
+  }
+]
+
+
+==================================================================
+SECTION 4: ROOM RECOMMENDATIONS (DECISION ALGORITHM)
+==================================================================
+
+------------------------------------------------------------------
+TEST 9: Recommendations with Default Weights
+------------------------------------------------------------------
+Command: curl -X POST http://localhost:8000/api/recommend \
+  -H "Content-Type: application/json" \
+  -d '{"weights": {"temperature": 0.25, "co2": 0.30, "humidity": 0.20, "sound": 0.25}}'
+
+Response: (Top 3 rooms)
+[
+  {
+    "room_id": 5,
+    "room_name": "Room B102",
+    "rank": 1,
+    "score": 94.8,
+    "individual_scores": {
+      "temperature": 97.0,
+      "co2": 90.0,
+      "humidity": 100.0,
+      "sound": 94.0
+    },
+    "sensor_values": {
+      "temperature": 21.7,
+      "co2": 799,
+      "humidity": 54.4,
+      "sound": 31.5
+    },
+    "facilities": {
+      "building": "Building B",
+      "floor": 1,
+      "capacity": 15,
+      "has_projector": false,
+      "has_whiteboard": true,
+      "has_power_outlets": 4,
+      "is_accessible": true
+    }
+  },
+  {
+    "room_id": 6,
+    "room_name": "Room B201",
+    "rank": 2,
+    "score": 91.8,
+    "individual_scores": {
+      "temperature": 91.0,
+      "co2": 97.7,
+      "humidity": 100.0,
+      "sound": 78.8
+    },
+    "sensor_values": {
+      "temperature": 21.1,
+      "co2": 647,
+      "humidity": 50.8,
+      "sound": 35.4
+    },
+    "facilities": {
+      "building": "Building B",
+      "floor": 2,
+      "capacity": 50,
+      "has_projector": true,
+      "has_whiteboard": true,
+      "has_power_outlets": 20,
+      "is_accessible": true
+    }
+  },
+  {
+    "room_id": 2,
+    "room_name": "Room A102",
+    "rank": 3,
+    "score": 90.5,
+    "individual_scores": {
+      "temperature": 100.0,
+      "co2": 68.2,
+      "humidity": 100.0,
+      "sound": 100.0
+    },
+    "sensor_values": {
+      "temperature": 22.0,
+      "co2": 1035,
+      "humidity": 54.6,
+      "sound": 29.3
+    },
+    "facilities": {
+      "building": "Building A",
+      "floor": 1,
+      "capacity": 25,
+      "has_projector": true,
+      "has_whiteboard": true,
+      "has_power_outlets": 8,
+      "is_accessible": true
+    }
+  }
+]
+
+... (7 more rooms)
+
+
+------------------------------------------------------------------
+TEST 10: Recommendations with Facility Requirements
+------------------------------------------------------------------
+Command: curl -X POST http://localhost:8000/api/recommend \
+  -H "Content-Type: application/json" \
+  -d '{"weights": {"temperature": 0.25, "co2": 0.30, "humidity": 0.20, "sound": 0.25}, "requirements": {"min_capacity": 20, "needs_projector": true}}'
+
+Response:
+[
+  {
+    "room_id": 6,
+    "room_name": "Room B201",
+    "rank": 1,
+    "score": 91.8,
+    "individual_scores": {
+      "temperature": 91.0,
+      "co2": 97.7,
+      "humidity": 100.0,
+      "sound": 78.8
+    },
+    "sensor_values": {
+      "temperature": 21.1,
+      "co2": 647,
+      "humidity": 50.8,
+      "sound": 35.4
+    },
+    "facilities": {
+      "building": "Building B",
+      "floor": 2,
+      "capacity": 50,
+      "has_projector": true,
+      "has_whiteboard": true,
+      "has_power_outlets": 20,
+      "is_accessible": true
+    }
+  },
+  {
+    "room_id": 2,
+    "room_name": "Room A102",
+    "rank": 2,
+    "score": 90.5,
+    "individual_scores": {
+      "temperature": 100.0,
+      "co2": 68.2,
+      "humidity": 100.0,
+      "sound": 100.0
+    },
+    "sensor_values": {
+      "temperature": 22.0,
+      "co2": 1035,
+      "humidity": 54.6,
+      "sound": 29.3
+    },
+    "facilities": {
+      "building": "Building A",
+      "floor": 1,
+      "capacity": 25,
+      "has_projector": true,
+      "has_whiteboard": true,
+      "has_power_outlets": 8,
+      "is_accessible": true
+    }
+  },
+  {
+    "room_id": 3,
+    "room_name": "Room A201",
+    "rank": 3,
+    "score": 89.0,
+    "individual_scores": {
+      "temperature": 97.0,
+      "co2": 98.8,
+      "humidity": 100.0,
+      "sound": 60.5
+    },
+    "sensor_values": {
+      "temperature": 22.3,
+      "co2": 625,
+      "humidity": 48.0,
+      "sound": 41.5
+    },
+    "facilities": {
+      "building": "Building A",
+      "floor": 2,
+      "capacity": 40,
+      "has_projector": true,
+      "has_whiteboard": true,
+      "has_power_outlets": 15,
+      "is_accessible": false
+    }
+  },
+  {
+    "room_id": 7,
+    "room_name": "Lab C101",
+    "rank": 4,
+    "score": 88.7,
+    "individual_scores": {
+      "temperature": 98.0,
+      "co2": 98.5,
+      "humidity": 100.0,
+      "sound": 58.7
+    },
+    "sensor_values": {
+      "temperature": 22.2,
+      "co2": 631,
+      "humidity": 45.9,
+      "sound": 42.1
+    },
+    "facilities": {
+      "building": "Building C",
+      "floor": 1,
+      "capacity": 25,
+      "has_projector": true,
+      "has_whiteboard": true,
+      "has_power_outlets": 25,
+      "is_accessible": true
+    }
+  },
+  {
+    "room_id": 4,
+    "room_name": "Room B101",
+    "rank": 5,
+    "score": 87.2,
+    "individual_scores": {
+      "temperature": 91.0,
+      "co2": 91.9,
+      "humidity": 100.0,
+      "sound": 67.4
+    },
+    "sensor_values": {
+      "temperature": 22.9,
+      "co2": 762,
+      "humidity": 51.4,
+      "sound": 39.2
+    },
+    "facilities": {
+      "building": "Building B",
+      "floor": 1,
+      "capacity": 20,
+      "has_projector": true,
+      "has_whiteboard": false,
+      "has_power_outlets": 6,
+      "is_accessible": true
+    }
+  },
+  {
+    "room_id": 1,
+    "room_name": "Room A101",
+    "rank": 6,
+    "score": 86.2,
+    "individual_scores": {
+      "temperature": 94.0,
+      "co2": 67.7,
+      "humidity": 98.4,
+      "sound": 90.8
+    },
+    "sensor_values": {
+      "temperature": 21.4,
+      "co2": 1047,
+      "humidity": 55.4,
+      "sound": 32.3
+    },
+    "facilities": {
+      "building": "Building A",
+      "floor": 1,
+      "capacity": 30,
+      "has_projector": true,
+      "has_whiteboard": true,
+      "has_power_outlets": 10,
+      "is_accessible": true
+    }
+  },
+  {
+    "room_id": 9,
+    "room_name": "Lecture Hall E",
+    "rank": 7,
+    "score": 78.7,
+    "individual_scores": {
+      "temperature": 86.0,
+      "co2": 99.3,
+      "humidity": 100.0,
+      "sound": 29.5
+    },
+    "sensor_values": {
+      "temperature": 20.6,
+      "co2": 613,
+      "humidity": 48.9,
+      "sound": 49.1
+    },
+    "facilities": {
+      "building": "Building E",
+      "floor": 0,
+      "capacity": 100,
+      "has_projector": true,
+      "has_whiteboard": true,
+      "has_power_outlets": 30,
+      "is_accessible": true
+    }
+  }
+]
+
+
+------------------------------------------------------------------
+TEST 11: Recommendations with Custom Desired Profile
+------------------------------------------------------------------
+Command: curl -X POST http://localhost:8000/api/recommend \
+  -H "Content-Type: application/json" \
+  -d '{"weights": {"temperature": 0.3, "co2": 0.4, "humidity": 0.15, "sound": 0.15}, "desired_profile": {"temperature": 21.0, "co2": 500, "humidity": 50, "sound": 30}}'
+
+Response: (Top 3 rooms)
+[
+  {
+    "room_id": 6,
+    "room_name": "Room B201",
+    "rank": 1,
+    "score": 94.6,
+    "individual_scores": {
+      "temperature": 99.3,
+      "co2": 95.1,
+      "humidity": 100.0,
+      "sound": 78.8
+    },
+    "sensor_values": {
+      "temperature": 21.1,
+      "co2": 647,
+      "humidity": 50.8,
+      "sound": 35.4
+    },
+    "facilities": {
+      "building": "Building B",
+      "floor": 2,
+      "capacity": 50,
+      "has_projector": true,
+      "has_whiteboard": true,
+      "has_power_outlets": 20,
+      "is_accessible": true
+    }
+  },
+  {
+    "room_id": 5,
+    "room_name": "Room B102",
+    "rank": 2,
+    "score": 93.7,
+    "individual_scores": {
+      "temperature": 95.3,
+      "co2": 90.0,
+      "humidity": 100.0,
+      "sound": 94.0
+    },
+    "sensor_values": {
+      "temperature": 21.7,
+      "co2": 799,
+      "humidity": 54.4,
+      "sound": 31.5
+    },
+    "facilities": {
+      "building": "Building B",
+      "floor": 1,
+      "capacity": 15,
+      "has_projector": false,
+      "has_whiteboard": true,
+      "has_power_outlets": 4,
+      "is_accessible": true
+    }
+  },
+  {
+    "room_id": 3,
+    "room_name": "Room A201",
+    "rank": 3,
+    "score": 89.8,
+    "individual_scores": {
+      "temperature": 91.3,
+      "co2": 95.8,
+      "humidity": 100.0,
+      "sound": 60.5
+    },
+    "sensor_values": {
+      "temperature": 22.3,
+      "co2": 625,
+      "humidity": 48.0,
+      "sound": 41.5
+    },
+    "facilities": {
+      "building": "Building A",
+      "floor": 2,
+      "capacity": 40,
+      "has_projector": true,
+      "has_whiteboard": true,
+      "has_power_outlets": 15,
+      "is_accessible": false
+    }
+  }
+]
+
+... (remaining rooms omitted)
+
+
+==================================================================
+SECTION 5: ERROR HANDLING
+==================================================================
+
+------------------------------------------------------------------
+TEST 12: Non-existent Room (404 Error)
+------------------------------------------------------------------
+Command: curl -X GET http://localhost:8000/api/rooms/9999
+
+Response:
+{
+  "detail": "Room 9999 not found"
+}
+
+
+==================================================================
+SECTION 6: SWAGGER/OPENAPI DOCUMENTATION
+==================================================================
+
+Interactive Documentation: http://localhost:8000/docs
+OpenAPI Schema: http://localhost:8000/openapi.json
+
+Command: curl -X GET http://localhost:8000/openapi.json
+
+Response: (Showing API info and available endpoints)
+{
+  "openapi": "3.1.0",
+  "info": {
+    "title": "ComfortRoom API",
+    "description": "IoT Room Selection Decision Support System - REST API",
+    "version": "1.0.0"
+  },
+  "paths": [
+    "/",
+    "/api/calendar/{room_id}",
+    "/api/recommend",
+    "/api/rooms",
+    "/api/rooms/{room_id}",
+    "/api/sensors/{room_id}",
+    "/api/sensors/{room_id}/latest"
+  ]
+}
+
+
+==================================================================
+TEST SUMMARY
+==================================================================
+
+✓ All endpoints tested and functional
+✓ Total Tests: 12
+✓ Response Format: JSON
+✓ Error Handling: Verified (404 responses)
+✓ Query Parameters: Working (limit, start, end)
+✓ POST Requests: Successful (recommendation algorithm)
+✓ Decision Algorithm: Ranking rooms by weighted scores
+✓ Filtering: By facilities (capacity, projector, etc.)
+✓ Custom Profiles: User-defined ideal conditions
+
+Endpoints Tested:
+- GET  /
+- GET  /api/rooms
+- GET  /api/rooms/{id}
+- GET  /api/sensors/{room_id}
+- GET  /api/sensors/{room_id}/latest
+- GET  /api/calendar/{room_id}
+- POST /api/recommend
+
+==================================================================

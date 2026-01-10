@@ -31,7 +31,7 @@ SENSOR_RANGES = {
 }
 
 # How often to insert data (seconds)
-INSERT_INTERVAL = 60
+INSERT_INTERVAL = 3
 
 
 def get_db_connection():

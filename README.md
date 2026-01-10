@@ -139,12 +139,12 @@
 
 **11. Take Screenshots**
 
-- [ ] UI1: preference sliders
-- [ ] UI1: results ranking
-- [ ] UI1: Swagger tab
-- [ ] UI2: sensor charts
-- [ ] UI2: room facilities
-- [ ] API testing in Postman/browser
+- [x] UI1: preference sliders
+- [x] UI1: results ranking
+- [x] UI1: Swagger tab
+- [x] UI2: sensor charts
+- [x] UI2: room facilities
+- [x] API testing in Postman/browser
 
 **12. Write Report**
 
